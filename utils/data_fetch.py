@@ -16,12 +16,27 @@ def normalize_symbol(symbol: str) -> str:
     return s
 
 
+# yfinanceのperiodが直接受け付ける値
+_YF_PERIODS = {"1d", "5d", "1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "ytd", "max"}
+
+
 @st.cache_data(ttl=600, show_spinner=False)
 def get_history(symbol: str, period: str = "1y", interval: str = "1d") -> pd.DataFrame:
-    """過去株価を取得する。失敗時は空のDataFrame。"""
+    """過去株価を取得する。失敗時は空のDataFrame。
+
+    yfinanceのperiodは最大10年までしか受け付けないため、`15y`/`30y`など
+    10年を超える指定は開始日(start)指定にフォールバックして取得する。
+    """
     sym = normalize_symbol(symbol)
     try:
-        df = yf.Ticker(sym).history(period=period, interval=interval)
+        ticker = yf.Ticker(sym)
+        if period in _YF_PERIODS:
+            df = ticker.history(period=period, interval=interval)
+        else:
+            # "30y" のような独自指定 → N年前を開始日にして取得
+            years = int(period.rstrip("y")) if period.endswith("y") else 30
+            start = (pd.Timestamp.now() - pd.DateOffset(years=years)).strftime("%Y-%m-%d")
+            df = ticker.history(start=start, interval=interval)
         if df is None or df.empty:
             return pd.DataFrame()
         return df

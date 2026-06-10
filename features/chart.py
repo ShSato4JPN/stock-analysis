@@ -7,7 +7,8 @@ from utils.data_fetch import get_history
 from utils.indicators import bollinger, sma
 from utils.ui import symbol_picker
 
-_PERIODS = {"1ヶ月": "1mo", "3ヶ月": "3mo", "6ヶ月": "6mo", "1年": "1y", "5年": "5y"}
+_PERIODS = {"1ヶ月": "1mo", "3ヶ月": "3mo", "6ヶ月": "6mo", "1年": "1y",
+            "5年": "5y", "10年": "10y", "20年": "20y", "30年": "30y"}
 
 
 def render():
