@@ -27,7 +27,10 @@ def load_listings() -> pd.DataFrame:
     except Exception:
         return pd.DataFrame()
     df["コード"] = df["コード"].astype(str).str.strip()
-    df["銘柄名"] = df["銘柄名"].astype(str).str.strip()
+    # 銘柄名はNFKC正規化して全角英数を半角に統一する
+    # (ＴＯＴＯ→TOTO。selectbox内蔵の絞り込みは正規化しないため、表示側を揃える)
+    df["銘柄名"] = df["銘柄名"].astype(str).map(
+        lambda s: unicodedata.normalize("NFKC", s)).str.strip()
     return df
 
 
