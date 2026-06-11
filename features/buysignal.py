@@ -123,22 +123,31 @@ def render():
     n_caution = sum(1 for c in checks if c[2] == CAUTION)
     score = n_buy - n_caution
 
+    # --- 初心者向けの3択判定: 買い / やめとけ(様子見) / 売り ---
+    if score >= 2:
+        emoji, label, color = "🟢", "買い", "#2ecc71"
+        reason = f"9個中{n_buy}個の指標が「買い寄り」を示しています。割安・売られすぎのサインが優勢です。"
+    elif score <= -2:
+        emoji, label, color = "🔴", "売り", "#e74c3c"
+        reason = f"9個中{n_caution}個の指標が「注意」を示しています。過熱・下落トレンドのサインが優勢です。"
+    else:
+        emoji, label, color = "🟡", "やめとけ(様子見)", "#f39c12"
+        reason = "買いと注意のサインが拮抗していて、今あえて動く理由が薄い状態です。"
+
+    st.markdown(
+        f"<div style='text-align:center; padding: 0.5em 0;'>"
+        f"<span style='font-size: 3.5em;'>{emoji}</span>"
+        f"<span style='font-size: 3em; font-weight: bold; color: {color}; margin-left: 0.3em;'>{label}</span>"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
+    st.markdown(f"<p style='text-align:center;'>{reason}</p>", unsafe_allow_html=True)
+
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("現在値", f"{float(close.iloc[-1]):,.2f}")
     c2.metric("買い寄りシグナル", f"{n_buy} / {len(checks)}")
     c3.metric("注意シグナル", f"{n_caution} / {len(checks)}")
     c4.metric("スコア", f"{score:+d}")
-
-    if score >= 3:
-        st.success("🟢 **買いシグナル優勢** — 複数の指標が買い目線を示しています。")
-    elif score >= 1:
-        st.info("🟡 **やや買い寄り** — 一部の指標が買い目線ですが決め手は弱めです。")
-    elif score <= -3:
-        st.error("🔴 **注意シグナル優勢** — 過熱・下落トレンドの指標が多く、様子見が無難です。")
-    elif score <= -1:
-        st.warning("🟠 **やや注意寄り** — 慎重に判断したい状態です。")
-    else:
-        st.info("⚪ **中立** — 明確なシグナルは出ていません。")
 
     # --- チェック一覧 ---
     table = pd.DataFrame(
