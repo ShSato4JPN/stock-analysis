@@ -44,7 +44,11 @@ PAGES = {
 def main():
     st.sidebar.title("📈 株式ポートフォリオ管理")
     st.sidebar.caption("日本株は数字コード(例: 7203)、米国株はティッカー(例: AAPL)")
-    choice = st.sidebar.radio("機能を選択", list(PAGES.keys()))
+    # 他ページからの遷移要求(例: スキャン結果クリック→チャート)を反映
+    goto = st.session_state.pop("_goto_page", None)
+    if goto in PAGES:
+        st.session_state["page"] = goto
+    choice = st.sidebar.radio("機能を選択", list(PAGES.keys()), key="page")
     st.sidebar.divider()
     st.sidebar.warning("⚠️ 株価データはyfinance由来で15〜20分程度の遅延があります。投資判断は自己責任で。")
     render_sidebar_memo()  # 画面左下: 注目企業の一時メモ

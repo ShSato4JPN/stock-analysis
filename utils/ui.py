@@ -76,6 +76,19 @@ def symbol_picker(label: str = "銘柄を検索", key: str = "sym", default_code
     return code
 
 
+def goto_chart(code: str):
+    """株価チャートページへ遷移し、指定銘柄を選択した状態にする。
+
+    chart側のsymbol_picker(key="chart")のウィジェット状態と、
+    app.py のページradio(key="page")を次回実行前に書き換える。
+    """
+    st.session_state["chart_mkt"] = "すべて"
+    st.session_state["chart_kw"] = ""
+    st.session_state["chart_sel"] = code
+    st.session_state["_goto_page"] = "🕯 株価チャート"  # app.pyのPAGESキーと一致させる
+    st.rerun()
+
+
 def _add_memo():
     """注目メモへの追加コールバック。追加後は選択をプレースホルダに戻す。"""
     sel = st.session_state.get("memo_add")
