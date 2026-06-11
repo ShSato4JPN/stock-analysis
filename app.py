@@ -8,6 +8,7 @@ import streamlit as st
 from utils.ui import render_sidebar_memo
 from features import (
     backtest,
+    buysignal,
     chart,
     compare,
     dividend,
@@ -34,6 +35,7 @@ PAGES = {
     "📊 銘柄比較": compare.render,
     "⚖️ リスク指標": risk.render,
     "🔗 類似銘柄検索": similar.render,
+    "💡 買い時チェック": buysignal.render,
 }
 
 
