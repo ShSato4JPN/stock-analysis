@@ -13,13 +13,16 @@ def _copy_button(text: str):
     """
     components.html(f"""
     <style>
-      html, body {{ margin: 0; padding: 0; }}
+      html, body {{ margin: 0; padding: 0; height: 100%; }}
+      body {{ display: flex; align-items: center; }}
       .copy-btn {{
+        box-sizing: border-box;  /* 枠線込みでサイズ計算し、iframeからはみ出さない */
         width: 100%; height: 38px;
+        display: flex; align-items: center; justify-content: center;
         background: transparent; color: inherit;
-        border: 1px solid rgba(128, 128, 128, .35);
+        border: 1px solid rgba(128, 128, 128, .4);
         border-radius: .5rem;
-        cursor: pointer; font-size: 14px; line-height: 1; padding: 0;
+        cursor: pointer; font-size: 14px; padding: 0;
         transition: border-color .15s, color .15s;
       }}
       .copy-btn:hover {{ border-color: #ff4b4b; color: #ff4b4b; }}
@@ -36,7 +39,7 @@ def _copy_button(text: str):
           navigator.clipboard.writeText('{text}').then(flash, fallback);
         }} else {{ fallback(); }}
       }})(this)">📋</button>
-    """, height=38)
+    """, height=40)
 
 
 def symbol_picker(label: str = "銘柄を検索", key: str = "sym", default_code: str | None = None):
