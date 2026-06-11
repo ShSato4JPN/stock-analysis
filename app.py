@@ -5,6 +5,7 @@
 """
 import streamlit as st
 
+from utils.ui import render_sidebar_memo
 from features import (
     backtest,
     chart,
@@ -42,6 +43,7 @@ def main():
     choice = st.sidebar.radio("機能を選択", list(PAGES.keys()))
     st.sidebar.divider()
     st.sidebar.warning("⚠️ 株価データはyfinance由来で15〜20分程度の遅延があります。投資判断は自己責任で。")
+    render_sidebar_memo()  # 画面左下: 注目企業の一時メモ
 
     PAGES[choice]()
 

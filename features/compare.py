@@ -14,7 +14,18 @@ def render():
     st.header("📊 銘柄比較")
     st.caption("2〜4銘柄を選び、正規化リターン(起点=100)の重ね描きと指標の横並び比較を行います。")
 
-    symbols = symbol_multipicker(key="cmp", default_codes=["7203", "6758"], max_n=4)
+    # サイドバーの注目メモから比較対象を取り込む
+    memo = st.session_state.get("memo_codes", [])
+    if memo:
+        names = ", ".join(listings.name_of(c) or c for c in memo[:4])
+        if st.button(f"📌 注目メモから取り込む({names})"):
+            # 絞り込みをリセットしてメモの銘柄を選択状態にする
+            st.session_state["cmp_mkt"] = "すべて"
+            st.session_state["cmp_kw"] = ""
+            st.session_state["cmp_sel"] = memo[:4]
+            st.rerun()
+
+    symbols = symbol_multipicker(key="cmp", default_codes=memo[:4] or ["7203", "6758"], max_n=4)
     period_label = st.selectbox("期間", list(_PERIODS.keys()), index=2)
 
     if len(symbols) < 2:

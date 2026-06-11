@@ -38,6 +38,49 @@ def symbol_picker(label: str = "銘柄を検索", key: str = "sym", default_code
     return code
 
 
+def _add_memo():
+    """注目メモへの追加コールバック。追加後は選択をプレースホルダに戻す。"""
+    sel = st.session_state.get("memo_add")
+    if sel and sel not in st.session_state["memo_codes"]:
+        st.session_state["memo_codes"].append(sel)
+    st.session_state["memo_add"] = None
+
+
+def render_sidebar_memo():
+    """サイドバー下部の「注目メモ」。セッション中だけ保持される一時メモ。"""
+    codes = st.session_state.setdefault("memo_codes", [])
+    st.sidebar.divider()
+    st.sidebar.markdown("**📌 注目メモ**")
+    st.sidebar.caption("比較したい企業を一時的に控えておけます(アプリを閉じると消えます)。"
+                       "「📊 銘柄比較」でまとめて取り込めます。")
+
+    df = listings.load_listings()
+    if df.empty:
+        st.sidebar.info("上場企業一覧が見つかりません。")
+        return
+
+    labels = dict(zip(df["コード"], df["コード"] + " " + df["銘柄名"]))
+    st.sidebar.selectbox(
+        "企業を追加", df["コード"].tolist(), index=None,
+        placeholder="企業名 or コードで検索...",
+        format_func=lambda c: labels.get(c, c),
+        key="memo_add", on_change=_add_memo,
+        label_visibility="collapsed",
+    )
+
+    for code in list(codes):
+        c1, c2 = st.sidebar.columns([5, 1])
+        c1.markdown(f"<small>{code} {listings.name_of(code)}</small>",
+                    unsafe_allow_html=True)
+        if c2.button("✕", key=f"memo_del_{code}", help="メモから外す"):
+            codes.remove(code)
+            st.rerun()
+
+    if codes and st.sidebar.button("🗑 すべてクリア", key="memo_clear"):
+        codes.clear()
+        st.rerun()
+
+
 def symbol_multipicker(label: str = "銘柄を選択(複数可)", key: str = "syms",
                        default_codes: list | None = None, max_n: int = 4):
     """複数銘柄を選ぶウィジェット。選択コードのリストを返す。
