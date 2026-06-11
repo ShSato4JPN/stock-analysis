@@ -69,12 +69,18 @@ def render_sidebar_memo():
     )
 
     for code in list(codes):
+        name = listings.name_of(code)
         c1, c2 = st.sidebar.columns([5, 1])
-        c1.markdown(f"<small>{code} {listings.name_of(code)}</small>",
-                    unsafe_allow_html=True)
-        if c2.button("✕", key=f"memo_del_{code}", help="メモから外す"):
+        with c1:
+            # st.codeはホバーで出るコピーボタンでコードをクリップボードに保存できる
+            st.code(code, language=None)
+        if c2.button("✕", key=f"memo_del_{code}", help=f"{name} をメモから外す"):
             codes.remove(code)
             st.rerun()
+        c1.caption(name)
+
+    if codes:
+        st.sidebar.caption("📋 コード右側のアイコンでクリップボードにコピーできます。")
 
     if codes and st.sidebar.button("🗑 すべてクリア", key="memo_clear"):
         codes.clear()
