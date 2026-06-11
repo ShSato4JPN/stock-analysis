@@ -6,10 +6,25 @@ from utils import listings
 
 
 def _copy_button(text: str):
-    """クリップボードにコピーする小さなボタン(JSコンポーネント)。"""
+    """クリップボードにコピーするボタン(JSコンポーネント)。
+
+    Streamlit標準のst.buttonと同じ見た目(枠線・角丸・高さ・ホバー色)に
+    スタイルを合わせている。
+    """
     components.html(f"""
-    <button title="{text} をコピー"
-      style="background:transparent;border:none;cursor:pointer;font-size:15px;padding:0;margin:0;"
+    <style>
+      html, body {{ margin: 0; padding: 0; }}
+      .copy-btn {{
+        width: 100%; height: 38px;
+        background: transparent; color: inherit;
+        border: 1px solid rgba(128, 128, 128, .35);
+        border-radius: .5rem;
+        cursor: pointer; font-size: 14px; line-height: 1; padding: 0;
+        transition: border-color .15s, color .15s;
+      }}
+      .copy-btn:hover {{ border-color: #ff4b4b; color: #ff4b4b; }}
+    </style>
+    <button class="copy-btn" title="{text} をコピー"
       onclick="(function(btn){{
         function flash() {{ btn.innerText='✓'; setTimeout(function() {{ btn.innerText='📋'; }}, 800); }}
         function fallback() {{
@@ -21,7 +36,7 @@ def _copy_button(text: str):
           navigator.clipboard.writeText('{text}').then(flash, fallback);
         }} else {{ fallback(); }}
       }})(this)">📋</button>
-    """, height=30)
+    """, height=38)
 
 
 def symbol_picker(label: str = "銘柄を検索", key: str = "sym", default_code: str | None = None):
