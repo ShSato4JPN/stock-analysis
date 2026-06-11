@@ -31,8 +31,10 @@ def render():
         return
 
     rows = []
+    with st.spinner("現在株価を取得中..."):
+        prices = {it["symbol"]: get_price(it["symbol"]) for it in items}
     for it in items:
-        price = get_price(it["symbol"])
+        price = prices[it["symbol"]]
         hit = ""
         if price is not None:
             if it["upper"] > 0 and price >= it["upper"]:
@@ -48,7 +50,8 @@ def render():
     df = pd.DataFrame(rows)
 
     def highlight(row):
-        return ["background-color: #4d2a2a" if row["状態"] else "" for _ in row]
+        # 半透明色: ライト/ダークどちらのテーマでも視認できる
+        return ["background-color: rgba(255, 99, 71, 0.25)" if row["状態"] else "" for _ in row]
 
     st.dataframe(
         df.style.apply(highlight, axis=1).format(

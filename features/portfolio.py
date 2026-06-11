@@ -52,20 +52,21 @@ def render():
 
     # 評価計算
     rows = []
-    for it in items:
-        name = listings.name_of(it["symbol"].replace(".T", ""))
-        price = get_price(it["symbol"])
-        annual_div = _annual_dividend(it["symbol"]) * it["shares"]  # 年間配当金(見積)
-        if price is None:
-            rows.append({**it, "name": name, "price": None, "value": None,
-                         "pl": None, "pl_pct": None, "div": annual_div})
-            continue
-        value = price * it["shares"]
-        invested = it["cost"] * it["shares"]
-        pl = value - invested
-        pl_pct = (pl / invested * 100) if invested else 0.0
-        rows.append({**it, "name": name, "price": price, "value": value,
-                     "pl": pl, "pl_pct": pl_pct, "div": annual_div})
+    with st.spinner("株価・配当データを取得中..."):
+        for it in items:
+            name = listings.name_of(it["symbol"].replace(".T", ""))
+            price = get_price(it["symbol"])
+            annual_div = _annual_dividend(it["symbol"]) * it["shares"]  # 年間配当金(見積)
+            if price is None:
+                rows.append({**it, "name": name, "price": None, "value": None,
+                             "pl": None, "pl_pct": None, "div": annual_div})
+                continue
+            value = price * it["shares"]
+            invested = it["cost"] * it["shares"]
+            pl = value - invested
+            pl_pct = (pl / invested * 100) if invested else 0.0
+            rows.append({**it, "name": name, "price": price, "value": value,
+                         "pl": pl, "pl_pct": pl_pct, "div": annual_div})
 
     df = pd.DataFrame(rows)
     valid = df.dropna(subset=["value"])
@@ -108,9 +109,11 @@ def render():
         use_container_width=True,
     )
 
-    # 資産配分円グラフ
+    # 資産配分円グラフ(銘柄名があれば表示に使う)
     if not valid.empty:
-        fig = px.pie(valid, names="symbol", values="value", title="資産配分")
+        pie_df = valid.assign(
+            label=valid.apply(lambda r: r["name"] or r["symbol"], axis=1))
+        fig = px.pie(pie_df, names="label", values="value", title="資産配分")
         st.plotly_chart(fig, use_container_width=True)
 
     # 編集/削除

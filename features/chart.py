@@ -9,6 +9,8 @@ from utils.ui import symbol_picker
 
 _PERIODS = {"1ヶ月": "1mo", "3ヶ月": "3mo", "6ヶ月": "6mo", "1年": "1y",
             "5年": "5y", "10年": "10y", "20年": "20y", "30年": "30y"}
+# 10年以上は週足に切り替え(日足だと数千本になり重く見づらい)
+_WEEKLY_PERIODS = {"10y", "20y", "30y"}
 
 
 def render():
@@ -23,10 +25,14 @@ def render():
     if not symbol:
         return
 
-    df = get_history(symbol, period=_PERIODS[period_label])
+    period = _PERIODS[period_label]
+    weekly = period in _WEEKLY_PERIODS
+    df = get_history(symbol, period=period, interval="1wk" if weekly else "1d")
     if df.empty:
         st.error("データを取得できませんでした。銘柄コードを確認してください。")
         return
+    if weekly:
+        st.caption("📅 10年以上は週足で表示しています(移動平均・ボリンジャーバンドも週足ベース)。")
 
     close = df["Close"]
     fig = make_subplots(
