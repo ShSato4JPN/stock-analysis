@@ -51,8 +51,6 @@ def render_sidebar_memo():
     codes = st.session_state.setdefault("memo_codes", [])
     st.sidebar.divider()
     st.sidebar.markdown("**📌 注目メモ**")
-    st.sidebar.caption("比較したい企業を一時的に控えておけます(アプリを閉じると消えます)。"
-                       "「📊 銘柄比較」でまとめて取り込めます。")
 
     df = listings.load_listings()
     if df.empty:
@@ -62,27 +60,30 @@ def render_sidebar_memo():
     labels = dict(zip(df["コード"], df["コード"] + " " + df["銘柄名"]))
     st.sidebar.selectbox(
         "企業を追加", df["コード"].tolist(), index=None,
-        placeholder="企業名 or コードで検索...",
+        placeholder="企業名 or コードで追加...",
         format_func=lambda c: labels.get(c, c),
         key="memo_add", on_change=_add_memo,
         label_visibility="collapsed",
     )
 
+    if not codes:
+        st.sidebar.caption("比較したい企業を一時的に控えられます(アプリを閉じると消えます)。"
+                           "「📊 銘柄比較」でまとめて取り込めます。")
+        return
+
+    # 1銘柄=1行のコンパクト表示
     for code in list(codes):
         name = listings.name_of(code)
-        c1, c2 = st.sidebar.columns([5, 1])
-        with c1:
-            # st.codeはホバーで出るコピーボタンでコードをクリップボードに保存できる
-            st.code(code, language=None)
+        c1, c2 = st.sidebar.columns([6, 1], vertical_alignment="center")
+        c1.markdown(f"`{code}` {name}")
         if c2.button("✕", key=f"memo_del_{code}", help=f"{name} をメモから外す"):
             codes.remove(code)
             st.rerun()
-        c1.caption(name)
 
-    if codes:
-        st.sidebar.caption("📋 コード右側のアイコンでクリップボードにコピーできます。")
-
-    if codes and st.sidebar.button("🗑 すべてクリア", key="memo_clear"):
+    # コードはまとめてコピー(スクリーニングの銘柄リスト等にそのまま貼れる)
+    st.sidebar.code(", ".join(codes), language=None)
+    st.sidebar.caption("📋 上のコード一覧は右側のアイコンでコピーできます。")
+    if st.sidebar.button("🗑 すべてクリア", key="memo_clear"):
         codes.clear()
         st.rerun()
 
