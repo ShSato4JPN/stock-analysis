@@ -3,7 +3,7 @@ import plotly.graph_objects as go
 import streamlit as st
 from plotly.subplots import make_subplots
 
-from utils.data_fetch import get_history
+from utils.data_fetch import get_dividends, get_history
 from utils.indicators import bollinger, sma
 from utils.ui import symbol_picker
 
@@ -35,6 +35,27 @@ def render():
         st.caption("📅 10年以上は週足で表示しています(移動平均・ボリンジャーバンドも週足ベース)。")
 
     close = df["Close"]
+
+    # --- 表示期間のリターン(値上がり + 配当込みトータルリターン) ---
+    start_price = float(close.iloc[0])
+    end_price = float(close.iloc[-1])
+    price_ret = (end_price / start_price - 1) * 100
+    div_sum = 0.0
+    try:
+        div = get_dividends(symbol)
+        if not div.empty:
+            div_sum = float(div[div.index >= df.index[0]].sum())  # 期間内の1株配当合計
+    except Exception:
+        pass
+    total_ret = ((end_price - start_price + div_sum) / start_price) * 100
+
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("終値", f"{end_price:,.2f}")
+    c2.metric(f"期間リターン({period_label})", f"{price_ret:+.2f}%")
+    c3.metric("トータルリターン(配当込み)", f"{total_ret:+.2f}%",
+              f"{total_ret - price_ret:+.2f}pt",
+              help="(値上がり + 期間内の1株配当合計) ÷ 期間開始時の株価。配当再投資は考慮しません")
+    c4.metric("期間内配当(1株)", f"{div_sum:,.2f}")
     fig = make_subplots(
         rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.03,
         row_heights=[0.75, 0.25], subplot_titles=("株価", "出来高"),
