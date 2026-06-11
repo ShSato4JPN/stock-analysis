@@ -1,7 +1,27 @@
 """共通UIウィジェット。"""
 import streamlit as st
+import streamlit.components.v1 as components
 
 from utils import listings
+
+
+def _copy_button(text: str):
+    """クリップボードにコピーする小さなボタン(JSコンポーネント)。"""
+    components.html(f"""
+    <button title="{text} をコピー"
+      style="background:transparent;border:none;cursor:pointer;font-size:15px;padding:0;margin:0;"
+      onclick="(function(btn){{
+        function flash() {{ btn.innerText='✓'; setTimeout(function() {{ btn.innerText='📋'; }}, 800); }}
+        function fallback() {{
+          var ta=document.createElement('textarea'); ta.value='{text}';
+          document.body.appendChild(ta); ta.select();
+          document.execCommand('copy'); document.body.removeChild(ta); flash();
+        }}
+        if (navigator.clipboard && navigator.clipboard.writeText) {{
+          navigator.clipboard.writeText('{text}').then(flash, fallback);
+        }} else {{ fallback(); }}
+      }})(this)">📋</button>
+    """, height=30)
 
 
 def symbol_picker(label: str = "銘柄を検索", key: str = "sym", default_code: str | None = None):
@@ -71,18 +91,17 @@ def render_sidebar_memo():
                            "「📊 銘柄比較」でまとめて取り込めます。")
         return
 
-    # 1銘柄=1行のコンパクト表示
+    # 1銘柄=1行: 銘柄名 + 📋コピー + ✕削除
     for code in list(codes):
         name = listings.name_of(code)
-        c1, c2 = st.sidebar.columns([6, 1], vertical_alignment="center")
+        c1, c2, c3 = st.sidebar.columns([5, 1, 1], vertical_alignment="center")
         c1.markdown(f"`{code}` {name}")
-        if c2.button("✕", key=f"memo_del_{code}", help=f"{name} をメモから外す"):
+        with c2:
+            _copy_button(code)
+        if c3.button("✕", key=f"memo_del_{code}", help=f"{name} をメモから外す"):
             codes.remove(code)
             st.rerun()
 
-    # コードはまとめてコピー(スクリーニングの銘柄リスト等にそのまま貼れる)
-    st.sidebar.code(", ".join(codes), language=None)
-    st.sidebar.caption("📋 上のコード一覧は右側のアイコンでコピーできます。")
     if st.sidebar.button("🗑 すべてクリア", key="memo_clear"):
         codes.clear()
         st.rerun()
