@@ -15,6 +15,7 @@ from features import (
     portfolio,
     risk,
     screening,
+    similar,
     watchlist,
 )
 
@@ -31,6 +32,7 @@ PAGES = {
     "📰 ニュース・決算": news.render,
     "📊 銘柄比較": compare.render,
     "⚖️ リスク指標": risk.render,
+    "🔗 類似銘柄検索": similar.render,
 }
 
 

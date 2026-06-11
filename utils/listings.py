@@ -56,6 +56,15 @@ def search(keyword: str = "", market: str | None = None) -> pd.DataFrame:
     return df
 
 
+def row_of(code: str) -> dict:
+    """コードから上場企業一覧の1行をdictで返す。見つからなければ空dict。"""
+    df = load_listings()
+    if df.empty:
+        return {}
+    hit = df[df["コード"] == str(code).strip()]
+    return hit.iloc[0].to_dict() if not hit.empty else {}
+
+
 def name_of(code: str) -> str:
     """コードから銘柄名を引く。見つからなければ空文字。"""
     df = load_listings()
