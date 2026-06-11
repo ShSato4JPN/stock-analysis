@@ -16,6 +16,7 @@ from features import (
     news,
     portfolio,
     risk,
+    scan,
     screening,
     similar,
     watchlist,
@@ -36,6 +37,7 @@ PAGES = {
     "⚖️ リスク指標": risk.render,
     "🔗 類似銘柄検索": similar.render,
     "💡 買い時チェック": buysignal.render,
+    "🚀 一括スキャン": scan.render,
 }
 
 
