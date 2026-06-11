@@ -7,7 +7,7 @@ import pandas as pd
 import streamlit as st
 
 from utils import listings
-from utils.data_fetch import get_info, normalize_symbol
+from utils.data_fetch import dividend_yield_pct, get_info, normalize_symbol
 
 # サンプル: 日経225の一部 + 米国主要銘柄
 _DEFAULT = "7203, 9984, 8306, 6758, 9432, AAPL, MSFT, KO, JNJ, VZ"
@@ -54,7 +54,7 @@ def render():
             "銘柄": sym,
             "PER": info.get("trailingPE"),
             "PBR": info.get("priceToBook"),
-            "配当利回り(%)": (info.get("dividendYield") or 0) * 100 if info.get("dividendYield") else None,
+            "配当利回り(%)": dividend_yield_pct(info),
             "時価総額": info.get("marketCap"),
         })
         progress.progress((i + 1) / len(symbols))

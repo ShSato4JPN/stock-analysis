@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from utils import listings
-from utils.data_fetch import get_history, get_info
+from utils.data_fetch import dividend_yield_pct, get_history, get_info
 from utils.ui import symbol_multipicker
 
 _PERIODS = {"3ヶ月": "3mo", "6ヶ月": "6mo", "1年": "1y", "3年": "3y", "5年": "5y"}
@@ -24,16 +24,17 @@ def render():
     # --- 正規化リターン(起点=100)の重ね描き ---
     fig = go.Figure()
     perf = {}
-    for sym in symbols:
-        df = get_history(sym, period=_PERIODS[period_label])
-        if df.empty:
-            st.warning(f"{sym}: 株価を取得できませんでした。")
-            continue
-        close = df["Close"].dropna()
-        norm = close / close.iloc[0] * 100
-        name = listings.name_of(sym.replace(".T", "")) or sym
-        fig.add_trace(go.Scatter(x=norm.index, y=norm.values, name=f"{sym} {name}"))
-        perf[sym] = (close.iloc[-1] / close.iloc[0] - 1) * 100
+    with st.spinner("株価データを取得中..."):
+        for sym in symbols:
+            df = get_history(sym, period=_PERIODS[period_label])
+            if df.empty:
+                st.warning(f"{sym}: 株価を取得できませんでした。")
+                continue
+            close = df["Close"].dropna()
+            norm = close / close.iloc[0] * 100
+            name = listings.name_of(sym.replace(".T", "")) or sym
+            fig.add_trace(go.Scatter(x=norm.index, y=norm.values, name=f"{sym} {name}"))
+            perf[sym] = (close.iloc[-1] / close.iloc[0] - 1) * 100
 
     fig.add_hline(y=100, line=dict(color="gray", dash="dot"))
     fig.update_layout(height=500, title="正規化リターン(起点=100)",
@@ -52,14 +53,13 @@ def render():
     rows = []
     for sym in symbols:
         info = get_info(sym)
-        dy = info.get("dividendYield")
         rows.append({
             "銘柄": sym,
             "銘柄名": listings.name_of(sym.replace(".T", "")),
             "株価": info.get("currentPrice") or info.get("regularMarketPrice"),
             "PER": info.get("trailingPE"),
             "PBR": info.get("priceToBook"),
-            "配当利回り(%)": dy * 100 if dy else None,
+            "配当利回り(%)": dividend_yield_pct(info),
             "時価総額": info.get("marketCap"),
             "ROE(%)": (info.get("returnOnEquity") or 0) * 100 if info.get("returnOnEquity") else None,
         })

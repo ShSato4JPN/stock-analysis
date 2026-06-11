@@ -8,7 +8,7 @@ import pandas as pd
 import streamlit as st
 
 from utils import listings
-from utils.data_fetch import get_info
+from utils.data_fetch import dividend_yield_pct, get_info
 from utils.ui import symbol_picker
 
 
@@ -74,7 +74,6 @@ def render():
     progress = st.progress(0.0)
     for i, c in enumerate(targets):
         info = get_info(c)
-        dy = info.get("dividendYield")
         rows.append({
             "コード": c,
             "銘柄名": listings.name_of(c),
@@ -82,7 +81,7 @@ def render():
             "時価総額": info.get("marketCap"),
             "PER": info.get("trailingPE"),
             "PBR": info.get("priceToBook"),
-            "配当利回り(%)": dy * 100 if dy else None,
+            "配当利回り(%)": dividend_yield_pct(info),
         })
         progress.progress((i + 1) / len(targets))
     progress.empty()

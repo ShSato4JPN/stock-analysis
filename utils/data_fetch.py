@@ -3,17 +3,32 @@
 yfinanceは非公式ライブラリのため取得失敗が起こりうる。各関数は
 例外を握りつぶして空のデータ/Noneを返し、UI側で安全に扱えるようにする。
 """
+import re
+
 import pandas as pd
 import streamlit as st
 import yfinance as yf
 
+# 国内銘柄コード: 4桁数字(7203)または数字始まり4文字の英字入り新形式(130A)
+_JP_CODE = re.compile(r"^\d[\dA-Z]{3}$")
+
 
 def normalize_symbol(symbol: str) -> str:
-    """銘柄コードを正規化する。数字のみの場合は日本株とみなし .T を付与。"""
+    """銘柄コードを正規化する。国内コード形式なら .T を付与。"""
     s = symbol.strip().upper()
-    if s.isdigit():
+    if _JP_CODE.fullmatch(s):
         return f"{s}.T"
     return s
+
+
+def dividend_yield_pct(info: dict):
+    """infoから配当利回り(%)を返す。取得できなければNone。
+
+    yfinance 1.x の dividendYield は最初からパーセント値
+    (例: 3.02 = 3.02%)で返るため、そのまま使う。
+    """
+    v = info.get("dividendYield")
+    return float(v) if v is not None else None
 
 
 # yfinanceのperiodが直接受け付ける値
