@@ -67,8 +67,9 @@ def _trend(close, s0, horizon, n_sims, rng):
     t = np.arange(len(y))
     b, a = np.polyfit(t, y, 1)            # y ≈ a + b*t
     resid_std = float(np.std(y - (a + b * t)))
-    future_t = np.arange(len(y), len(y) + horizon)
-    mean_future = a + b * future_t        # 対数価格のトレンド予測
+    # 現在値を起点にトレンドの傾きで外挿する(回帰線の水準にジャンプさせない)
+    steps = np.arange(1, horizon + 1)
+    mean_future = np.log(s0) + b * steps
     noise = rng.normal(0, resid_std, size=(n_sims, horizon))
     paths = np.exp(mean_future + noise)
     params = {"年率トレンド": b * _TRADING_DAYS, "残差σ": resid_std}
@@ -83,7 +84,12 @@ def _ou(close, s0, horizon, n_sims, rng):
     # dx = beta0 + beta1*x_prev + noise を回帰 → alpha=-beta1, theta=beta0/alpha
     beta1, beta0 = np.polyfit(x_prev, dx, 1)
     alpha = -beta1
-    theta = beta0 / alpha if alpha != 0 else x.mean()
+    # alpha<=0 は平均回帰が検出できない状態(発散を防ぐためランダムウォークに退化)
+    if alpha <= 0:
+        alpha = 0.0
+        theta = float(x.mean())
+    else:
+        theta = beta0 / alpha
     sigma = float(np.std(dx - (beta0 + beta1 * x_prev)))
     paths = np.empty((n_sims, horizon))
     cur = np.full(n_sims, np.log(s0))
