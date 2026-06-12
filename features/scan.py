@@ -9,14 +9,17 @@
   - ファンダ情報(PER/PBR/配当)は ThreadPoolExecutor で並列取得
 """
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
 
 import pandas as pd
 import streamlit as st
 import yfinance as yf
 
 from features.buysignal import BUY, CAUTION, _fundamental_checks, _technical_checks
-from utils import listings
+from utils import listings, storage
 from utils.ui import goto_chart
+
+_STORE = "scan_result"  # 直前結果の保存先(data/scan_result.json)
 
 _INFO_WORKERS = 16  # info並列取得のスレッド数
 _CHUNK = 200        # バッチ取得のチャンクサイズ(チャンク単位でキャッシュが効く)
@@ -58,8 +61,8 @@ def _bulk_info(symbols: tuple) -> dict:
         return dict(ex.map(fetch, symbols))
 
 
-def _run_scan(codes: list, use_fund: bool) -> None:
-    """スキャンを実行して結果をセッションに保存する。"""
+def _run_scan(codes: list, use_fund: bool, cond: str) -> None:
+    """スキャンを実行して結果をセッションとディスクに保存する。"""
     symbols = tuple(f"{c}.T" for c in codes)
 
     # --- 並列取得(チャンク分割でキャッシュと進捗を両立) ---
@@ -114,11 +117,15 @@ def _run_scan(codes: list, use_fund: bool) -> None:
         prog.progress((i + 1) / len(closes), text=f"判定中... {i + 1}/{len(closes)}")
     prog.empty()
 
-    st.session_state["scan_state"] = {
-        "result": pd.DataFrame(rows),
+    state = {
+        "rows": rows,
         "requested": len(symbols),
         "missing": [s.replace(".T", "") for s in symbols if s not in closes],
+        "when": datetime.now().strftime("%Y-%m-%d %H:%M"),
+        "cond": cond,
     }
+    st.session_state["scan_state"] = state
+    storage.save(_STORE, state)  # 直前結果として永続化(再起動・リロード後も復元)
 
 
 def _selectable_table(df: pd.DataFrame, drop_col: str, key: str) -> None:
@@ -173,17 +180,26 @@ def render():
                            help="外すとテクニカルのみで高速になります")
     st.markdown(f"**対象: {len(codes)} / {total}銘柄**")
 
+    cond = f"{market} / 規模: {scale} / {'全' if scan_all else ''}{len(codes)}銘柄" \
+           f" / ファンダ{'あり' if use_fund else 'なし'}"
     if st.button("🚀 スキャン実行", type="primary"):
-        _run_scan(codes, use_fund)
+        _run_scan(codes, use_fund, cond)
 
-    # --- 結果表示(セッション保持: 行クリックの再実行でも消えない) ---
-    state = st.session_state.get("scan_state")
+    # --- 結果表示(セッション→ディスクの順で復元。リロードや再起動後も直前結果を表示) ---
+    state = st.session_state.get("scan_state") or storage.load(_STORE, None)
     if not state:
         return
-    result, requested, missing = state["result"], state["requested"], state["missing"]
+    st.session_state["scan_state"] = state
+    result = pd.DataFrame(state["rows"])
+    requested, missing = state["requested"], state["missing"]
     if result.empty:
         st.warning("判定できる銘柄がありませんでした。")
         return
+
+    st.divider()
+    st.markdown(f"#### 📋 スキャン結果")
+    st.caption(f"実行日時: {state.get('when', '-')} ／ 条件: {state.get('cond', '-')}"
+               " — 直前の結果は自動保存され、再起動後もここに表示されます。")
 
     if missing:
         with st.expander(f"⚠️ 取得失敗・データ不足で除外: {len(missing)}銘柄(クリックで一覧)"):
